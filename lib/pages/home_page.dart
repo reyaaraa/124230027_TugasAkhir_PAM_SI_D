@@ -131,6 +131,34 @@ class _HomePageState extends State<HomePage> {
   }
 
   // =======================
+  // Dialog konfirmasi logout
+  // =======================
+  void _showLogoutConfirmation() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Konfirmasi Logout"),
+          content: const Text("Apakah Anda yakin ingin keluar dari akun ini?"),
+          actions: [
+            TextButton(
+              child: const Text("Batal"),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            TextButton(
+              child: const Text("Logout", style: TextStyle(color: Colors.red)),
+              onPressed: () {
+                Navigator.of(context).pop(); // Tutup dialog
+                _logout(); // Lanjutkan logout
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // =======================
   // Dialog peringatan
   // =======================
   void _tampilkanDialogAqi(int aqi) {
@@ -215,7 +243,7 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
                       IconButton(
-                        onPressed: _logout,
+                        onPressed: _showLogoutConfirmation,
                         icon: const Icon(Icons.logout, color: Colors.red),
                         tooltip: "Logout",
                       ),
