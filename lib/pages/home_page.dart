@@ -271,7 +271,7 @@ class _HomePageState extends State<HomePage> {
                       textInputAction: TextInputAction.search,
                       onSubmitted: (value) => _ambilBerdasarkanKota(value),
                       decoration: InputDecoration(
-                        hintText: "Cari kota (contoh: Jakarta, Tokyo, London)",
+                        hintText: "Cari kota (contoh: Jakarta, Pekanbaru, dll)",
                         prefixIcon: const Icon(Icons.search),
                         suffixIcon: IconButton(
                           icon: const Icon(Icons.send),

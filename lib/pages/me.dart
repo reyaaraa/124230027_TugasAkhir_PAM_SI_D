@@ -141,7 +141,7 @@ class _MePageState extends State<MePage> {
                     _buildInfoCard(
                       icon: Icons.person_outline,
                       title: "Nama",
-                      value: "Fatimatuzzahra Filhayat",
+                      value: "Fatimatuzzahra Filhayati",
                     ),
                     const SizedBox(height: 16),
                     _buildInfoCard(
