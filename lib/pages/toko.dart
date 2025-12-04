@@ -1,46 +1,70 @@
 // lib/pages/toko.dart
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:intl/intl.dart';
 
-import '../models/produk_model.dart'; // pastikan nama file sesuai (produk_modek.dart)
+import '../models/produk_model.dart';
+import '../services/currency_service.dart';
+import 'detail_page.dart';
 
-// Halaman Toko: menampilkan daftarProduk dan membuka link ketika diklik
-class TokoPage extends StatelessWidget {
+class TokoPage extends StatefulWidget {
   const TokoPage({super.key});
 
-  Future<void> _bukaLink(String url, BuildContext context) async {
+  @override
+  State<TokoPage> createState() => _TokoPageState();
+}
+
+class _TokoPageState extends State<TokoPage> {
+  final List<String> currencies = ['IDR', 'USD', 'EUR', 'JPY', 'SGD'];
+  final CurrencyService api = CurrencyService(apiMode: true);
+
+  bool loading = false;
+
+  Future<void> changeCurrency(String newCur) async {
+    setState(() => loading = true);
     try {
-      final uri = Uri.parse(url);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (newCur == "IDR") {
+        GlobalCurrency.selected = "IDR";
+        GlobalCurrency.rate = 1.0;
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Tidak dapat membuka link.')),
-        );
+        final r = await api.convert("IDR", newCur, 1.0);
+        GlobalCurrency.selected = newCur;
+        GlobalCurrency.rate = r;
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error membuka link: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Gagal mengambil kurs: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => loading = false);
     }
   }
 
-  String _formatRupiah(int value) {
-    // sederhana: format tanpa package intl agar dependensi tidak perlu diubah di toko
-    final s = value.toString();
-    final buffer = StringBuffer();
-    int count = 0;
-    for (int i = s.length - 1; i >= 0; i--) {
-      buffer.write(s[i]);
-      count++;
-      if (count == 3 && i != 0) {
-        buffer.write('.');
-        count = 0;
-      }
+  String conv(int harga) {
+    if (GlobalCurrency.selected == "IDR") {
+      return NumberFormat.currency(
+        locale: 'id_ID',
+        symbol: 'Rp ',
+        decimalDigits: 0,
+      ).format(harga);
     }
-    final rev = buffer.toString().split('').reversed.join();
-    return 'Rp $rev';
+
+    final h = harga * GlobalCurrency.rate;
+
+    switch (GlobalCurrency.selected) {
+      case "USD":
+        return "\$${h.toStringAsFixed(2)}";
+      case "EUR":
+        return "€${h.toStringAsFixed(2)}";
+      case "JPY":
+        return "¥${h.toStringAsFixed(0)}";
+      case "SGD":
+        return "S\$${h.toStringAsFixed(2)}";
+      default:
+        return "${h.toStringAsFixed(2)} ${GlobalCurrency.selected}";
+    }
   }
 
   @override
@@ -48,48 +72,78 @@ class TokoPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF9FCFB),
       appBar: AppBar(
-        title: Text('Toko', style: GoogleFonts.poppins()),
+        title: Text("Toko", style: GoogleFonts.poppins()),
         backgroundColor: const Color(0xFF2BB5A3),
         centerTitle: true,
+        actions: [
+          loading
+              ? const Padding(
+                  padding: EdgeInsets.only(right: 16),
+                  child: SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  ),
+                )
+              : DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: GlobalCurrency.selected,
+                    dropdownColor: Colors.white,
+                    items: currencies
+                        .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                        .toList(),
+                    onChanged: (v) {
+                      if (v == null) return;
+                      if (v == GlobalCurrency.selected) return;
+                      changeCurrency(v);
+                    },
+                    iconEnabledColor: Colors.white,
+                  ),
+                ),
+        ],
       ),
       body: ListView.builder(
         padding: const EdgeInsets.all(12),
         itemCount: daftarProduk.length,
-        itemBuilder: (context, index) {
-          final produk = daftarProduk[index];
+        itemBuilder: (context, i) {
+          final p = daftarProduk[i];
+
           return Card(
+            elevation: 3,
             margin: const EdgeInsets.symmetric(vertical: 8),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
-            elevation: 3,
             child: InkWell(
               borderRadius: BorderRadius.circular(12),
-              onTap: () => _bukaLink(
-                produk.link,
-                context,
-              ), // buka link langsung saat tap kartu
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => DetailPage(produk: p)),
+                );
+              },
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Row(
                   children: [
                     ClipRRect(
                       borderRadius: BorderRadius.circular(8),
-                      child: SizedBox(
+                      child: Image.asset(
+                        p.foto,
                         width: 90,
                         height: 90,
-                        child: Image.asset(
-                          produk.foto,
-                          fit: BoxFit.cover,
-                          errorBuilder: (ctx, err, st) {
-                            return Container(
-                              color: Colors.grey[200],
-                              child: const Center(
-                                child: Icon(Icons.image_not_supported),
-                              ),
-                            );
-                          },
-                        ),
+                        fit: BoxFit.cover,
+                        errorBuilder: (ctx, err, st) {
+                          return Container(
+                            color: Colors.grey[200],
+                            child: const Center(
+                              child: Icon(Icons.image_not_supported),
+                            ),
+                          );
+                        },
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -98,7 +152,7 @@ class TokoPage extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            produk.nama,
+                            p.nama,
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -106,7 +160,7 @@ class TokoPage extends StatelessWidget {
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            produk.deskripsi,
+                            p.deskripsi,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -114,7 +168,7 @@ class TokoPage extends StatelessWidget {
                           Row(
                             children: [
                               Text(
-                                _formatRupiah(produk.harga),
+                                conv(p.harga),
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -122,7 +176,7 @@ class TokoPage extends StatelessWidget {
                               const Spacer(),
                               ElevatedButton.icon(
                                 onPressed: () =>
-                                    _bukaLink(produk.link, context),
+                                    openExternalLink(p.link, context),
                                 icon: const Icon(Icons.shopping_cart_outlined),
                                 label: const Text('Beli'),
                                 style: ElevatedButton.styleFrom(

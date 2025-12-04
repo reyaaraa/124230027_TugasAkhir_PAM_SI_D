@@ -4,7 +4,7 @@ import 'package:path/path.dart';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import '../models/user_model.dart';
-import '../models/feedback_model.dart';
+import 'package:projectmobile/models/feedback_model.dart';
 
 class DatabaseService {
   static Database? _database;
@@ -28,6 +28,25 @@ class DatabaseService {
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
+  }
+
+  Future<List<FeedbackModel>> getFeedback(String username) async {
+    // TODO: Replace this mock implementation with your actual database query
+    // Example: return await database.queryFeedbackByUsername(username);
+    return [];
+  }
+
+  Future<void> deleteFeedback(int id) async {
+    // TODO: Implement the logic to delete feedback from your data source (e.g., database or API)
+    // Example for sqflite:
+    // final db = await getDatabase();
+    // await db.delete('feedback', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> addFeedback(FeedbackModel feedback) async {
+    // TODO: Implement the logic to save feedback to your database
+    // Example for Firebase Firestore:
+    // await FirebaseFirestore.instance.collection('feedbacks').add(feedback.toMap());
   }
 
   Future<void> _createDB(Database db, int version) async {
@@ -100,26 +119,4 @@ class DatabaseService {
   }
 
   // --- CRUD untuk Feedback ---
-
-  Future<int> addFeedback(FeedbackModel feedback) async {
-    final db = await database;
-    return await db.insert(_feedbackTableName, feedback.toMap());
-  }
-
-  Future<List<FeedbackModel>> getFeedback(String username) async {
-    final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      _feedbackTableName,
-      where: 'username = ?',
-      whereArgs: [username],
-      orderBy: 'createdAt DESC', // Tampilkan yang terbaru di atas
-    );
-
-    return List.generate(maps.length, (i) => FeedbackModel.fromMap(maps[i]));
-  }
-
-  Future<void> deleteFeedback(int id) async {
-    final db = await database;
-    await db.delete(_feedbackTableName, where: 'id = ?', whereArgs: [id]);
-  }
 }

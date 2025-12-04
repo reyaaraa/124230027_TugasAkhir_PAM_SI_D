@@ -1,53 +1,36 @@
-// lib/services/weather_service.dart
 import 'dart:convert';
 import 'dart:async';
+import 'dart:io';
 import 'package:http/http.dart' as http;
-import 'secure_store.dart';
 
-/// WeatherService
-/// - Menggunakan OpenWeatherMap Current Weather (by lat/lon or city name)
-/// - Simpan API key di SecureStore under 'openweather_key'
 class WeatherService {
-  final String _base = 'https://api.openweathermap.org/data/2.5/weather';
+  final String _apiKey = "3e3ad1e41c07f236c1f5b7a6e8fb4dfa";
 
-  Future<String?> _getKey() async {
-    return await SecureStore.readEncrypted('openweather_key');
-  }
-
-  /// Get weather by coordinates (lat, lon)
-  Future<Map<String, dynamic>> getWeatherByCoords(
-    double lat,
-    double lon,
-  ) async {
-    final key = await _getKey();
-    if (key == null) {
-      throw Exception('OpenWeather key not set. Simpan ke SecureStore.');
-    }
-    final uri = Uri.parse('$_base?lat=$lat&lon=$lon&appid=$key&units=metric');
+  Future<Map<String, dynamic>> fetchWeather(double lat, double lon) async {
+    final url = Uri.https("api.openweathermap.org", "/data/2.5/weather", {
+      "lat": lat.toString(),
+      "lon": lon.toString(),
+      "appid": _apiKey,
+      "units": "metric",
+    });
 
     try {
-      final r = await http.get(uri).timeout(const Duration(seconds: 8));
-      if (r.statusCode == 200) {
-        return jsonDecode(r.body) as Map<String, dynamic>;
-      } else {
-        throw Exception('Weather HTTP ${r.statusCode}');
-      }
-    } on TimeoutException {
-      throw Exception('Timeout: Weather API tidak merespons');
-    } catch (e) {
-      rethrow;
-    }
-  }
+      final r = await http.get(url).timeout(const Duration(seconds: 10));
 
-  /// Option: get by city name
-  Future<Map<String, dynamic>> getWeatherByCity(String city) async {
-    final key = await _getKey();
-    if (key == null) throw Exception('OpenWeather key not set.');
-    final uri = Uri.parse(
-      '$_base?q=${Uri.encodeComponent(city)}&appid=$key&units=metric',
-    );
-    final r = await http.get(uri).timeout(const Duration(seconds: 8));
-    if (r.statusCode == 200) return jsonDecode(r.body) as Map<String, dynamic>;
-    throw Exception('Weather HTTP ${r.statusCode}');
+      if (r.statusCode != 200) {
+        throw HttpException("OpenWeather HTTP ${r.statusCode}");
+      }
+
+      final decoded = jsonDecode(r.body);
+      if (decoded is! Map) {
+        throw Exception("Format cuaca tidak valid");
+      }
+
+      return decoded as Map<String, dynamic>;
+    } on TimeoutException {
+      throw TimeoutException("Timeout mengambil data cuaca");
+    } on SocketException {
+      throw SocketException("Tidak ada koneksi internet");
+    }
   }
 }

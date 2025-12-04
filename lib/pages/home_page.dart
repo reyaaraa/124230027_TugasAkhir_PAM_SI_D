@@ -1,8 +1,11 @@
 // lib/pages/home_page.dart
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
-import '../services/location_service.dart';
+import 'package:geolocator/geolocator.dart';
+
 import '../services/air_services.dart';
 import '../models/air_quality.dart';
 import '../widgets/info_card.dart';
@@ -10,6 +13,7 @@ import '../services/notification_service.dart';
 import '../services/secure_store.dart';
 import 'login_page.dart';
 import '../pages/navbar.dart';
+import 'about_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -19,7 +23,6 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final LocationService _lokasi = LocationService();
   final AirService _udara = AirService();
 
   AirQuality? _dataAqi;
@@ -34,8 +37,14 @@ class _HomePageState extends State<HomePage> {
     _ambilDenganLokasi();
   }
 
+  @override
+  void dispose() {
+    _cariKota.dispose();
+    super.dispose();
+  }
+
   // =======================
-  // Ambil data berdasar lokasi GPS
+  // Ambil data berdasar lokasi GPS (menggunakan Geolocator)
   // =======================
   Future<void> _ambilDenganLokasi() async {
     setState(() {
@@ -44,16 +53,51 @@ class _HomePageState extends State<HomePage> {
     });
 
     try {
-      final posisi = await _lokasi.getCurrentPosition();
-      final json = await _udara.fetchNearestCity(
-        lat: posisi.latitude,
-        lon: posisi.longitude,
+      // 1) Pastikan service lokasi aktif
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        throw Exception(
+          'Layanan lokasi (GPS) tidak aktif. Silakan aktifkan GPS dan coba lagi.',
+        );
+      }
+
+      // 2) Cek & minta permission lokasi
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied) {
+        throw Exception(
+          'Izin lokasi ditolak. Mohon izinkan lokasi agar aplikasi bekerja.',
+        );
+      }
+      if (permission == LocationPermission.deniedForever) {
+        throw Exception(
+          'Izin lokasi ditolak permanen. Buka pengaturan aplikasi untuk mengaktifkan izin lokasi.',
+        );
+      }
+
+      // 3) Ambil posisi dengan timeout agar tidak menggantung
+      final pos = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.best,
+        timeLimit: const Duration(seconds: 12),
       );
+
+      // 4) Panggil API AirVisual berdasarkan koordinat
+      final json = await _udara.fetchNearestCity(
+        lat: pos.latitude,
+        lon: pos.longitude,
+      );
+
+      // 5) Parse dan update UI (validasi sebelum parse)
+      if (json == null || json.isEmpty) {
+        throw Exception('Response dari server kosong.');
+      }
 
       _dataAqi = AirQuality.fromJson(json);
 
-      // Jika udara berbahaya, kirim notifikasi dengan waktu
-      if (_dataAqi!.aqi > 20) {
+      // 6) Notifikasi jika perlu
+      if (_dataAqi != null && _dataAqi!.aqi > 20) {
         await NotificationService.showNotification(
           title: '⚠️ Peringatan Polusi!',
           body: 'AQI ${_dataAqi!.aqi} — Hindari keluar rumah!',
@@ -61,16 +105,35 @@ class _HomePageState extends State<HomePage> {
         );
       }
 
-      // Jika udara tidak sehat, tampilkan toko
-      if (_dataAqi!.aqi >= 110) {
+      // 7) Jika sangat tidak sehat, tampilkan dialog & arahkan ke toko
+      if (_dataAqi != null && _dataAqi!.aqi >= 110) {
         Future.delayed(const Duration(milliseconds: 600), () {
           _tampilkanDialogAqi(_dataAqi!.aqi);
         });
       }
+    } on TimeoutException {
+      _pesanError =
+          'Timeout: gagal mengambil lokasi atau data AQI. Periksa koneksi dan coba lagi.';
+    } on Exception catch (e) {
+      final raw = e.toString();
+      if (raw.toLowerCase().contains('permission') ||
+          raw.toLowerCase().contains('izin')) {
+        _pesanError =
+            'Izin lokasi diperlukan. Buka pengaturan aplikasi dan aktifkan izin lokasi.';
+      } else if (raw.toLowerCase().contains('gps') ||
+          raw.toLowerCase().contains('lokasi')) {
+        _pesanError = raw; // pesan layanan lokasi nonaktif
+      } else if (raw.toLowerCase().contains('socket') ||
+          raw.toLowerCase().contains('koneksi')) {
+        _pesanError = 'Tidak ada koneksi internet. Periksa jaringan Anda.';
+      } else {
+        _pesanError =
+            'Gagal mengambil data: ${raw.replaceAll("Exception:", "").trim()}';
+      }
     } catch (e) {
-      _pesanError = e.toString();
+      _pesanError = 'Terjadi kesalahan: $e';
     } finally {
-      setState(() => _sedangMemuat = false);
+      if (mounted) setState(() => _sedangMemuat = false);
     }
   }
 
@@ -78,6 +141,7 @@ class _HomePageState extends State<HomePage> {
   // Ambil data berdasar nama kota (manual search)
   // =======================
   Future<void> _ambilBerdasarkanKota(String kota) async {
+    kota = kota.trim();
     if (kota.isEmpty) return;
     FocusScope.of(context).unfocus();
 
@@ -88,11 +152,29 @@ class _HomePageState extends State<HomePage> {
 
     try {
       final json = await _udara.fetchByCity(kota);
+
+      if (json == null || json.isEmpty) {
+        throw Exception("Tidak ada data dari server untuk kota '$kota'.");
+      }
+
       _dataAqi = AirQuality.fromJson(json);
+    } on TimeoutException {
+      _pesanError = 'Timeout saat mengambil data. Periksa koneksi.';
+    } on Exception catch (e) {
+      final raw = e.toString();
+      if (raw.toLowerCase().contains('socket') ||
+          raw.toLowerCase().contains('koneksi')) {
+        _pesanError = 'Tidak ada koneksi internet. Periksa jaringan Anda.';
+      } else if (raw.toLowerCase().contains('tidak ditemukan') ||
+          raw.toLowerCase().contains('kota')) {
+        _pesanError = "Gagal menemukan data untuk kota '$kota'";
+      } else {
+        _pesanError = raw.replaceAll('Exception:', '').trim();
+      }
     } catch (e) {
-      _pesanError = "Gagal menemukan data untuk kota '$kota'";
+      _pesanError = 'Terjadi kesalahan: $e';
     } finally {
-      setState(() => _sedangMemuat = false);
+      if (mounted) setState(() => _sedangMemuat = false);
     }
   }
 
@@ -217,11 +299,39 @@ class _HomePageState extends State<HomePage> {
           ? Center(
               child: Padding(
                 padding: const EdgeInsets.all(16),
-                child: Text(
-                  _pesanError!,
-                  style: const TextStyle(color: Colors.red),
-                  textAlign: TextAlign.center,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _pesanError!,
+                      style: const TextStyle(color: Colors.red),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton.icon(
+                      onPressed: _ambilDenganLokasi,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Coba lagi'),
+                    ),
+                  ],
                 ),
+              ),
+            )
+          : _dataAqi == null
+          ? Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Belum ada data. Silakan cari kota atau gunakan lokasi.',
+                  ),
+                  const SizedBox(height: 12),
+                  ElevatedButton.icon(
+                    onPressed: _ambilDenganLokasi,
+                    icon: const Icon(Icons.my_location),
+                    label: const Text('Ambil Lokasi Saya'),
+                  ),
+                ],
               ),
             )
           : SingleChildScrollView(

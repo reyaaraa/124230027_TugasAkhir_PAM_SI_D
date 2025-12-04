@@ -1,11 +1,9 @@
-// lib/services/air_service.dart
-import 'dart:convert';
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'secure_store.dart';
 
-/// AirService - ambil data AQI dari AirVisual API (pakai nearest_city)
-/// Dilengkapi dukungan cari kota lewat koordinat (geocoding)
 class AirService {
   final String _fallbackKey = '12680eb5-d113-48f9-ae58-d591c4a9c7b6';
   final String _baseNearest = 'https://api.airvisual.com/v2/nearest_city';
@@ -15,7 +13,26 @@ class AirService {
     return stored ?? _fallbackKey;
   }
 
-  /// Ambil data berdasarkan lokasi saat ini
+  Future<T> _withRetry<T>(
+    Future<T> Function() action, {
+    int retries = 2,
+    Duration delay = const Duration(milliseconds: 400),
+  }) async {
+    Object? lastError;
+
+    for (int i = 0; i <= retries; i++) {
+      try {
+        return await action();
+      } catch (e) {
+        lastError = e;
+        if (i == retries) rethrow;
+        await Future.delayed(delay);
+      }
+    }
+    throw lastError ?? Exception("Unknown error");
+  }
+
+  /// Ambil AQI berdasarkan lokasi (GPS)
   Future<Map<String, dynamic>> fetchNearestCity({
     double? lat,
     double? lon,
@@ -27,61 +44,87 @@ class AirService {
 
     try {
       final r = await http.get(uri).timeout(const Duration(seconds: 10));
-      if (r.statusCode == 200) {
-        final json = jsonDecode(r.body) as Map<String, dynamic>;
-        if (json['status'] == 'success') return json;
-        throw Exception('AirVisual response: ${json['status']}');
-      } else {
-        throw Exception('HTTP ${r.statusCode}');
+
+      if (r.statusCode != 200) {
+        throw HttpException("AirVisual HTTP ${r.statusCode}");
       }
+
+      final data = jsonDecode(r.body);
+      if (data is! Map || data['status'] != 'success') {
+        throw Exception(
+          data['data']?['message'] ?? 'AirVisual error: ${data['status']}',
+        );
+      }
+
+      return data as Map<String, dynamic>;
     } on TimeoutException {
-      throw Exception('Timeout: AirVisual tidak merespons dalam 10s');
-    } catch (e) {
-      rethrow;
+      throw TimeoutException("Timeout: AirVisual tidak merespons");
+    } on SocketException {
+      throw SocketException("Tidak ada koneksi internet");
     }
   }
 
-  /// ✅ Ambil data berdasarkan nama kota (pakai Nominatim + nearest_city)
+  /// Ambil AQI berdasarkan nama kota
   Future<Map<String, dynamic>> fetchByCity(String city) async {
-    if (city.isEmpty) throw Exception('Nama kota kosong');
+    city = city.trim();
+    if (city.isEmpty) throw Exception("Nama kota tidak boleh kosong");
+
+    final geoUri = Uri(
+      scheme: "https",
+      host: "nominatim.openstreetmap.org",
+      path: "/search",
+      queryParameters: {"q": city, "format": "json", "limit": "1"},
+    );
 
     try {
-      // 1️⃣ Ambil koordinat dari nama kota (pakai OpenStreetMap Nominatim API)
-      final geoUrl = Uri.parse(
-        'https://nominatim.openstreetmap.org/search?q=$city&format=json&limit=1',
-      );
-      final geoResponse = await http.get(
-        geoUrl,
-        headers: {'User-Agent': 'ParuGuardApp/1.0 (your_email@example.com)'},
+      // 1) Geocoding Nominatim
+      final geoResponse = await _withRetry(
+        () => http
+            .get(
+              geoUri,
+              headers: {"User-Agent": "ParuGuard/1.0 (contact@email.com)"},
+            )
+            .timeout(const Duration(seconds: 8)),
       );
 
       if (geoResponse.statusCode != 200) {
-        throw Exception('Gagal mendapatkan koordinat kota');
+        throw HttpException("Geocoding HTTP ${geoResponse.statusCode}");
       }
 
       final geoData = jsonDecode(geoResponse.body);
-      if (geoData.isEmpty) throw Exception('Kota "$city" tidak ditemukan');
-
-      final lat = double.parse(geoData[0]['lat']);
-      final lon = double.parse(geoData[0]['lon']);
-
-      // 2️⃣ Gunakan nearest_city berdasarkan koordinat
-      final key = await _getKey();
-      final airUrl = Uri.parse('$_baseNearest?lat=$lat&lon=$lon&key=$key');
-
-      final airResponse = await http
-          .get(airUrl)
-          .timeout(const Duration(seconds: 10));
-
-      if (airResponse.statusCode == 200) {
-        final json = jsonDecode(airResponse.body);
-        if (json['status'] == 'success') return json;
-        throw Exception('AirVisual gagal: ${json['data']['message']}');
-      } else {
-        throw Exception('HTTP ${airResponse.statusCode}');
+      if (geoData is! List || geoData.isEmpty) {
+        throw Exception("Kota '$city' tidak ditemukan");
       }
-    } catch (e) {
-      throw Exception('Gagal mendapatkan data AQI: $e');
+
+      final lat = double.parse(geoData[0]["lat"]);
+      final lon = double.parse(geoData[0]["lon"]);
+
+      // 2) AirVisual berdasarkan koordinat
+      final key = await _getKey();
+      final airUri = Uri.parse('$_baseNearest?lat=$lat&lon=$lon&key=$key');
+
+      final airResponse = await _withRetry(
+        () => http.get(airUri).timeout(const Duration(seconds: 10)),
+      );
+
+      if (airResponse.statusCode != 200) {
+        throw HttpException("AirVisual HTTP ${airResponse.statusCode}");
+      }
+
+      final airJson = jsonDecode(airResponse.body);
+
+      if (airJson['status'] != 'success') {
+        throw Exception(
+          airJson['data']?['message'] ??
+              "AirVisual error: ${airJson['status']}",
+        );
+      }
+
+      return airJson;
+    } on TimeoutException {
+      throw TimeoutException("Timeout saat mencari kota");
+    } on SocketException {
+      throw SocketException("Tidak ada koneksi internet");
     }
   }
 }

@@ -1,21 +1,25 @@
+// lib/models/produk_model.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-void main() {
-  runApp(const MyApp());
+/// ===== GLOBAL CURRENCY STATE (global kecil, disimpan di sini) =====
+class GlobalCurrency {
+  /// code like 'IDR', 'USD', etc.
+  static String selected = 'IDR';
+
+  /// multiplier: 1 IDR -> rate in selected currency (default 1.0)
+  static double rate = 1.0;
 }
 
-// =============================
-// MODEL
-// =============================
+/// MODEL
 class ProdukModel {
   final String kategori;
   final String nama;
   final String deskripsi;
-  final String foto; // path dari assets/images
-  final int harga; // dalam Rupiah
-  final String link; // link ke Shopee atau marketplace lain
+  final String foto; // path ke assets/images/...
+  final int harga;
+  final String link;
 
   ProdukModel({
     required this.kategori,
@@ -27,9 +31,7 @@ class ProdukModel {
   });
 }
 
-// =============================
 // DAFTAR PRODUK (dummy)
-// =============================
 final List<ProdukModel> daftarProduk = [
   ProdukModel(
     kategori: 'Masker',
@@ -38,325 +40,84 @@ final List<ProdukModel> daftarProduk = [
         'Masker N95 dengan 5 lapisan filter untuk perlindungan maksimal terhadap polusi udara dan debu halus.',
     foto: 'assets/images/masker_n95.jpeg',
     harga: 25000,
-    link:
-        'https://shopee.co.id/Masker-N95-KN95-5-Lapisan-Premium-i.582995334.14938185239',
+    link: 'https://www.tokopedia.com/search?st=product&q=masker%20n95',
   ),
   ProdukModel(
     kategori: 'Masker',
     nama: 'Masker KF94 Putih',
     deskripsi:
-        'Masker dengan desain 3D yang nyaman digunakan dan mampu menyaring partikel mikro dengan efisiensi tinggi.',
+        'Masker 3D yang nyaman digunakan dan efektif menyaring partikel mikro.',
     foto: 'assets/images/masker_kf94.jpg',
     harga: 20000,
-    link:
-        'https://shopee.co.id/Masker-KF94-3D-Face-Mask-Korea-i.380917469.12717954142',
+    link: 'https://www.tokopedia.com/search?st=product&q=masker%20kf94',
   ),
   ProdukModel(
     kategori: 'Obat-obatan',
     nama: 'Inhaler Herbal Mint',
-    deskripsi:
-        'Inhaler dengan kandungan mint alami untuk membantu melegakan hidung tersumbat dan menyegarkan pernapasan.',
+    deskripsi: 'Inhaler dengan aroma mint segar untuk melegakan pernapasan.',
     foto: 'assets/images/inhaler_herbal.jpg',
     harga: 30000,
     link:
-        'https://shopee.co.id/Minyak-Angin-Inhaler-Herbal-Mint-Aroma-Therapy-i.11043463.2056536774',
+        'https://www.tokopedia.com/search?st=product&q=inhaler%20herbal%20mint',
   ),
   ProdukModel(
     kategori: 'Obat-obatan',
     nama: 'Obat Batuk Herbal Jahe',
-    deskripsi:
-        'Obat batuk cair dengan ekstrak jahe dan madu yang membantu meredakan batuk serta menghangatkan tenggorokan.',
+    deskripsi: 'Obat batuk herbal dengan kandungan jahe & madu.',
     foto: 'assets/images/obat_batuk.png',
     harga: 35000,
     link:
-        'https://shopee.co.id/OBH-HERBAL-JAHE-MADU-OBAT-BATUK-HERBAL-i.278412624.5973472861',
+        'https://www.tokopedia.com/search?st=product&q=obat%20batuk%20herbal%20jahe',
   ),
   ProdukModel(
     kategori: 'Suplemen',
     nama: 'Vitamin C 1000mg',
-    deskripsi:
-        'Suplemen vitamin C dosis tinggi untuk menjaga daya tahan tubuh, terutama di kondisi udara buruk.',
+    deskripsi: 'Vitamin C dosis tinggi untuk daya tahan tubuh.',
     foto: 'assets/images/vitamin_c.jpeg',
     harga: 50000,
-    link:
-        'https://shopee.co.id/Enervon-C-Vitamin-C-1000mg-30-Tablet-i.38618629.5371377106',
+    link: 'https://www.tokopedia.com/search?st=product&q=vitamin%20c%201000mg',
   ),
   ProdukModel(
     kategori: 'Suplemen',
     nama: 'Madu Murni 250ml',
-    deskripsi:
-        'Madu alami kaya enzim dan mineral yang membantu meningkatkan stamina dan menjaga kesehatan paru-paru.',
+    deskripsi: 'Madu alami yang baik untuk imunitas & kesehatan paru.',
     foto: 'assets/images/madu.png',
     harga: 60000,
-    link:
-        'https://shopee.co.id/Madu-Murni-300ml-Murni-Alami-i.35414076.8064686158',
+    link: 'https://www.tokopedia.com/search?st=product&q=madu%20murni',
   ),
 ];
 
-// =============================
-// APLIKASI UTAMA
-// =============================
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Toko Contoh',
-      theme: ThemeData(primarySwatch: Colors.teal),
-      home: const ProductListPage(),
-    );
-  }
-}
-
-// =============================
-// HALAMAN LIST PRODUK
-// =============================
-class ProductListPage extends StatelessWidget {
-  const ProductListPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Daftar Produk')),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(12),
-        itemCount: daftarProduk.length,
-        itemBuilder: (context, index) {
-          final produk = daftarProduk[index];
-          return ProductCard(produk: produk);
-        },
-      ),
-    );
-  }
-}
-
-// =============================
-// KARTU PRODUK
-// =============================
-class ProductCard extends StatelessWidget {
-  final ProdukModel produk;
-  const ProductCard({required this.produk, super.key});
-
-  String formatRupiah(int value) {
-    final formatter = NumberFormat.currency(
-      locale: 'id_ID',
-      symbol: 'Rp ',
-      decimalDigits: 0,
-    );
-    return formatter.format(value);
-  }
-
-  Future<void> _bukaLink(String url, BuildContext context) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
-      // fallback: tampilkan snackbar
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tidak dapat membuka link.')),
-      );
+// Helper: buka link external (robust)
+Future<void> openExternalLink(String rawUrl, BuildContext context) async {
+  try {
+    if (rawUrl.trim().isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Link kosong.')));
+      return;
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 4,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          // buka detail
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ProductDetailPage(produk: produk),
-            ),
-          );
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              // Gambar produk (assets)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: SizedBox(
-                  width: 100,
-                  height: 100,
-                  child: Image.asset(
-                    produk.foto,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: Colors.grey[200],
-                        child: const Center(
-                          child: Icon(Icons.image_not_supported),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-
-              const SizedBox(width: 12),
-
-              // Info produk
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      produk.nama,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      produk.deskripsi,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Text(
-                          formatRupiah(produk.harga),
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        const Spacer(),
-                        ElevatedButton.icon(
-                          onPressed: () => _bukaLink(produk.link, context),
-                          icon: const Icon(Icons.shopping_cart_outlined),
-                          label: const Text('Beli di Shopee'),
-                          style: ElevatedButton.styleFrom(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// =============================
-// HALAMAN DETAIL PRODUK
-// =============================
-class ProductDetailPage extends StatelessWidget {
-  final ProdukModel produk;
-  const ProductDetailPage({required this.produk, super.key});
-
-  String formatRupiah(int value) {
-    final formatter = NumberFormat.currency(
-      locale: 'id_ID',
-      symbol: 'Rp ',
-      decimalDigits: 0,
-    );
-    return formatter.format(value);
-  }
-
-  Future<void> _bukaLink(String url, BuildContext context) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tidak dapat membuka link.')),
-      );
+    Uri? uri = Uri.tryParse(rawUrl.trim());
+    if (uri == null || uri.scheme.isEmpty) {
+      uri = Uri.tryParse('https://${rawUrl.trim()}');
     }
-  }
+    if (uri == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('URL tidak valid.')));
+      return;
+    }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(produk.nama)),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // gambar besar
-              Center(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.asset(
-                    produk.foto,
-                    width: double.infinity,
-                    height: 220,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        width: double.infinity,
-                        height: 220,
-                        color: Colors.grey[200],
-                        child: const Center(
-                          child: Icon(Icons.image_not_supported, size: 48),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                produk.kategori.toUpperCase(),
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                produk.nama,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                formatRupiah(produk.harga),
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(produk.deskripsi, style: const TextStyle(fontSize: 16)),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () => _bukaLink(produk.link, context),
-                      icon: const Icon(Icons.shopping_cart_outlined),
-                      label: const Text('Beli di Shopee'),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    if (await canLaunchUrl(uri)) {
+      final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!ok) {
+        await launchUrl(uri, mode: LaunchMode.platformDefault);
+      }
+    } else {
+      await launchUrl(uri, mode: LaunchMode.platformDefault);
+    }
+  } catch (e) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Error membuka link: $e')));
   }
 }
