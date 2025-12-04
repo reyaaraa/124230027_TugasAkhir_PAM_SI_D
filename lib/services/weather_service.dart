@@ -20,8 +20,9 @@ class WeatherService {
     double lon,
   ) async {
     final key = await _getKey();
-    if (key == null)
+    if (key == null) {
       throw Exception('OpenWeather key not set. Simpan ke SecureStore.');
+    }
     final uri = Uri.parse('$_base?lat=$lat&lon=$lon&appid=$key&units=metric');
 
     try {

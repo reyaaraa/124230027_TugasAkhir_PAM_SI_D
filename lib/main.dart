@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'pages/home_page.dart';
 import 'pages/login_page.dart';
 import 'services/notification_service.dart';
 import 'pages/navbar.dart';
@@ -10,8 +9,6 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await NotificationService.init();
   tz.initializeTimeZones();
-
-  final String? sessionUser = await SecureStore.readEncrypted('session_user');
 
   runApp(const ParuGuardApp());
 }

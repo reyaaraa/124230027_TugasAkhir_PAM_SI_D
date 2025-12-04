@@ -1,7 +1,6 @@
 // lib/services/notification_service.dart
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:timezone/timezone.dart' as tz;
 import 'package:intl/intl.dart';
 
 class NotificationService {
@@ -43,24 +42,24 @@ class NotificationService {
   /// Format waktu untuk berbagai timezone
   static String _formatMultipleTimezones() {
     final now = DateTime.now();
-    
+
     // WIB (UTC+7)
     final wib = now.toUtc().add(const Duration(hours: 7));
     final wibStr = DateFormat('HH:mm').format(wib);
-    
+
     // WITA (UTC+8)
     final wita = now.toUtc().add(const Duration(hours: 8));
     final witaStr = DateFormat('HH:mm').format(wita);
-    
+
     // WIT (UTC+9)
     final wit = now.toUtc().add(const Duration(hours: 9));
     final witStr = DateFormat('HH:mm').format(wit);
-    
+
     // London (UTC+0 atau UTC+1 tergantung DST)
     // Untuk sederhana, kita gunakan UTC+0
     final london = now.toUtc();
     final londonStr = DateFormat('HH:mm').format(london);
-    
+
     return 'WIB $wibStr | WITA $witaStr | WIT $witStr | London $londonStr';
   }
 
@@ -73,7 +72,7 @@ class NotificationService {
     if (!_isInitialized) {
       print('⚠️ Notification service not initialized, re-initializing...');
       await init();
-      
+
       if (!_isInitialized) {
         print('❌ Still not initialized, aborting notification');
         return;
@@ -83,7 +82,7 @@ class NotificationService {
     try {
       // Buat body dengan waktu
       final timeInfo = _formatMultipleTimezones();
-      final fullBody = aqi != null 
+      final fullBody = aqi != null
           ? '$body\n\n🕐 $timeInfo'
           : '$body\n$timeInfo';
 
@@ -96,7 +95,7 @@ class NotificationService {
         showWhen: true,
         styleInformation: BigTextStyleInformation(''), // Agar text panjang muat
       );
-      
+
       const iOSDetails = DarwinNotificationDetails(
         presentAlert: true,
         presentBadge: true,
@@ -109,7 +108,7 @@ class NotificationService {
         fullBody,
         const NotificationDetails(android: androidDetails, iOS: iOSDetails),
       );
-      
+
       print('✅ Notification shown: $title');
     } catch (e) {
       print('❌ Error showing notification: $e');

@@ -38,7 +38,8 @@ final List<ProdukModel> daftarProduk = [
         'Masker N95 dengan 5 lapisan filter untuk perlindungan maksimal terhadap polusi udara dan debu halus.',
     foto: 'assets/images/masker_n95.jpeg',
     harga: 25000,
-    link: 'https://shopee.co.id/search?keyword=masker%20n95',
+    link:
+        'https://shopee.co.id/Masker-N95-KN95-5-Lapisan-Premium-i.582995334.14938185239',
   ),
   ProdukModel(
     kategori: 'Masker',
@@ -47,7 +48,8 @@ final List<ProdukModel> daftarProduk = [
         'Masker dengan desain 3D yang nyaman digunakan dan mampu menyaring partikel mikro dengan efisiensi tinggi.',
     foto: 'assets/images/masker_kf94.jpg',
     harga: 20000,
-    link: 'https://shopee.co.id/search?keyword=masker%20kf94',
+    link:
+        'https://shopee.co.id/Masker-KF94-3D-Face-Mask-Korea-i.380917469.12717954142',
   ),
   ProdukModel(
     kategori: 'Obat-obatan',
@@ -56,7 +58,8 @@ final List<ProdukModel> daftarProduk = [
         'Inhaler dengan kandungan mint alami untuk membantu melegakan hidung tersumbat dan menyegarkan pernapasan.',
     foto: 'assets/images/inhaler_herbal.jpg',
     harga: 30000,
-    link: 'https://shopee.co.id/search?keyword=inhaler%20herbal',
+    link:
+        'https://shopee.co.id/Minyak-Angin-Inhaler-Herbal-Mint-Aroma-Therapy-i.11043463.2056536774',
   ),
   ProdukModel(
     kategori: 'Obat-obatan',
@@ -65,7 +68,8 @@ final List<ProdukModel> daftarProduk = [
         'Obat batuk cair dengan ekstrak jahe dan madu yang membantu meredakan batuk serta menghangatkan tenggorokan.',
     foto: 'assets/images/obat_batuk.png',
     harga: 35000,
-    link: 'https://shopee.co.id/search?keyword=obat%20batuk%20herbal',
+    link:
+        'https://shopee.co.id/OBH-HERBAL-JAHE-MADU-OBAT-BATUK-HERBAL-i.278412624.5973472861',
   ),
   ProdukModel(
     kategori: 'Suplemen',
@@ -74,7 +78,8 @@ final List<ProdukModel> daftarProduk = [
         'Suplemen vitamin C dosis tinggi untuk menjaga daya tahan tubuh, terutama di kondisi udara buruk.',
     foto: 'assets/images/vitamin_c.jpeg',
     harga: 50000,
-    link: 'https://shopee.co.id/search?keyword=vitamin%20c%201000mg',
+    link:
+        'https://shopee.co.id/Enervon-C-Vitamin-C-1000mg-30-Tablet-i.38618629.5371377106',
   ),
   ProdukModel(
     kategori: 'Suplemen',
@@ -83,7 +88,8 @@ final List<ProdukModel> daftarProduk = [
         'Madu alami kaya enzim dan mineral yang membantu meningkatkan stamina dan menjaga kesehatan paru-paru.',
     foto: 'assets/images/madu.png',
     harga: 60000,
-    link: 'https://shopee.co.id/search?keyword=madu%20murni',
+    link:
+        'https://shopee.co.id/Madu-Murni-300ml-Murni-Alami-i.35414076.8064686158',
   ),
 ];
 

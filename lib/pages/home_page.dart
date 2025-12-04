@@ -6,11 +6,9 @@ import '../services/location_service.dart';
 import '../services/air_services.dart';
 import '../models/air_quality.dart';
 import '../widgets/info_card.dart';
-import '../widgets/converter_card.dart';
 import '../services/notification_service.dart';
 import '../services/secure_store.dart';
 import 'login_page.dart';
-import '../pages/toko.dart';
 import '../pages/navbar.dart';
 
 class HomePage extends StatefulWidget {

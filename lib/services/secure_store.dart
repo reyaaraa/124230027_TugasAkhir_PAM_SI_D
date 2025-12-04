@@ -47,4 +47,6 @@ class SecureStore {
   static Future<void> delete(String key) async {
     await _storage.delete(key: key);
   }
+
+  static Future<void> deleteEncrypted(String s) async {}
 }
