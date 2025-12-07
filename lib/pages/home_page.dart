@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
 import 'package:geolocator/geolocator.dart';
-
 import '../services/air_services.dart';
 import '../models/air_quality.dart';
 import '../widgets/info_card.dart';

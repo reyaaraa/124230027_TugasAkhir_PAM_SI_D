@@ -1,10 +1,13 @@
+// lib/pages/me_page.dart
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+
 import 'package:projectmobile/models/feedback_model.dart';
 import 'package:projectmobile/services/database_service.dart';
 import 'package:projectmobile/services/secure_store.dart';
 import 'package:projectmobile/pages/feedback_form_page.dart';
+import 'package:projectmobile/pages/login_page.dart';
 
 class MePage extends StatefulWidget {
   const MePage({super.key});
@@ -30,6 +33,7 @@ class _MePageState extends State<MePage> {
     setState(() {
       _isLoading = true;
     });
+
     final username = await SecureStore.readEncrypted('session_user');
     final feedback = await _dbService.getFeedback(username ?? '');
 
@@ -47,6 +51,9 @@ class _MePageState extends State<MePage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
           title: const Text("Hapus Masukan"),
           content: const Text("Apakah Anda yakin ingin menghapus masukan ini?"),
           actions: [
@@ -79,6 +86,45 @@ class _MePageState extends State<MePage> {
     );
   }
 
+  // ====== LOGOUT ======
+  Future<void> _logout() async {
+    await SecureStore.delete('session_user');
+    if (!mounted) return;
+
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const LoginPage()),
+      (route) => false,
+    );
+  }
+
+  void _showLogoutConfirmation() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: const Text('Konfirmasi Logout'),
+        content: const Text('Apakah Anda yakin ingin keluar dari akun ini?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _logout();
+            },
+            child: const Text(
+              'Logout',
+              style: TextStyle(color: Colors.redAccent),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  // =====================
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -95,6 +141,13 @@ class _MePageState extends State<MePage> {
           ),
         ),
         centerTitle: true,
+        actions: [
+          IconButton(
+            onPressed: _showLogoutConfirmation,
+            icon: const Icon(Icons.logout, color: Colors.white),
+            tooltip: 'Logout',
+          ),
+        ],
       ),
       body: _isLoading
           ? const Center(
@@ -109,6 +162,7 @@ class _MePageState extends State<MePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
+                    // FOTO PROFIL
                     CircleAvatar(
                       radius: 80,
                       backgroundColor: const Color(0xFF2BB5A3),
@@ -128,6 +182,7 @@ class _MePageState extends State<MePage> {
                       ),
                     ),
                     const SizedBox(height: 16),
+                    // USERNAME
                     Text(
                       _username ?? 'Pengguna',
                       style: GoogleFonts.poppins(
@@ -138,6 +193,7 @@ class _MePageState extends State<MePage> {
                     ),
                     const SizedBox(height: 40),
 
+                    // KARTU INFO
                     _buildInfoCard(
                       icon: Icons.person_outline,
                       title: "Nama",
@@ -157,6 +213,7 @@ class _MePageState extends State<MePage> {
                     ),
                     const SizedBox(height: 40),
 
+                    // RIWAYAT MASUKAN
                     Text(
                       "RIWAYAT MASUKAN",
                       style: GoogleFonts.poppins(

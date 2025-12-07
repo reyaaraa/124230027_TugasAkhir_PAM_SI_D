@@ -21,32 +21,12 @@ class DatabaseService {
   Future<Database> _initDB() async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, _dbName);
-    // Naikkan versi database ke 2 dan tambahkan onUpgrade
     return await openDatabase(
       path,
       version: 2,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
-  }
-
-  Future<List<FeedbackModel>> getFeedback(String username) async {
-    // TODO: Replace this mock implementation with your actual database query
-    // Example: return await database.queryFeedbackByUsername(username);
-    return [];
-  }
-
-  Future<void> deleteFeedback(int id) async {
-    // TODO: Implement the logic to delete feedback from your data source (e.g., database or API)
-    // Example for sqflite:
-    // final db = await getDatabase();
-    // await db.delete('feedback', where: 'id = ?', whereArgs: [id]);
-  }
-
-  Future<void> addFeedback(FeedbackModel feedback) async {
-    // TODO: Implement the logic to save feedback to your database
-    // Example for Firebase Firestore:
-    // await FirebaseFirestore.instance.collection('feedbacks').add(feedback.toMap());
   }
 
   Future<void> _createDB(Database db, int version) async {
@@ -69,12 +49,8 @@ class DatabaseService {
     ''');
   }
 
-  // Fungsi ini akan dijalankan jika versi database di perangkat (misal: 1)
-  // lebih rendah dari versi di kode (sekarang: 2).
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
-      // Jika versi lama < 2, berarti tabel feedback belum ada.
-      // Maka kita buat tabelnya.
       await db.execute('''
         CREATE TABLE $_feedbackTableName(
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -119,4 +95,25 @@ class DatabaseService {
   }
 
   // --- CRUD untuk Feedback ---
+
+  Future<List<FeedbackModel>> getFeedback(String username) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      _feedbackTableName,
+      where: 'username = ?',
+      whereArgs: [username],
+      orderBy: 'createdAt DESC',
+    );
+    return maps.map((m) => FeedbackModel.fromMap(m)).toList();
+  }
+
+  Future<void> addFeedback(FeedbackModel feedback) async {
+    final db = await database;
+    await db.insert(_feedbackTableName, feedback.toMap());
+  }
+
+  Future<void> deleteFeedback(int id) async {
+    final db = await database;
+    await db.delete(_feedbackTableName, where: 'id = ?', whereArgs: [id]);
+  }
 }
