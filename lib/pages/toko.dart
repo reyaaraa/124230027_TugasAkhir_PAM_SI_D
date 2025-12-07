@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-
 import '../models/produk_model.dart';
 import '../services/currency_service.dart';
 import 'detail_page.dart';
