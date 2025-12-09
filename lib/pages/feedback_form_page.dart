@@ -62,8 +62,8 @@ class _FeedbackFormPageState extends State<FeedbackFormPage> {
             TextFormField(
               controller: _kesanController,
               decoration: const InputDecoration(
-                labelText: 'Kesan Anda',
-                hintText: 'Apa kesan pertama Anda tentang aplikasi ini?',
+                labelText: 'Kesan',
+                hintText: 'Kesan yang ingin disampaikan?',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.sentiment_satisfied_alt_outlined),
               ),
@@ -76,8 +76,8 @@ class _FeedbackFormPageState extends State<FeedbackFormPage> {
             TextFormField(
               controller: _pesanController,
               decoration: const InputDecoration(
-                labelText: 'Pesan/Saran',
-                hintText: 'Ada saran untuk pengembangan selanjutnya?',
+                labelText: 'Pesan',
+                hintText: 'Pesan yang ingin disampaikan?',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.lightbulb_outline),
               ),

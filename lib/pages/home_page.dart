@@ -11,7 +11,6 @@ import '../services/notification_service.dart';
 import '../services/secure_store.dart';
 import 'login_page.dart';
 import '../pages/navbar.dart';
-import 'about_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
